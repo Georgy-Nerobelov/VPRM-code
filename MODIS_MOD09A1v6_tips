@@ -1,0 +1,22 @@
+#CREATED BY G.NEROBELOV, 11.02.2020
+
+#CONVERTING MODIS ORIGINAL SIN PROJECTION TO WGS84 USING "NEAR" TYPE OF INTERPOLATION AND SAVING TO  THE "netCDF" FORMAT
+gdalwarp -of netCDF -s_srs '+proj=sinu +R=6371007.181 +nadgrids=@null +wktext' -r near -t_srs '+proj=longlat +datum=WGS84 +no_defs' HDF4_EOS:EOS_GRID:"MODIS_NOBS_sur_refl_25_06_2000.hdf":MOD_Grid_500m_Surface_Reflectance:sur_refl_b06 band6.nc
+
+#CONVERTING FIELD "LSWI" FROM A FILE All_bands_2019-04-07_Up.nc TO GTiff FORMAT
+gdal_translate -of GTiff NETCDF:"All_bands_2019-04-07_Up.nc":LSWI LSWI_2019_04_07_Up.tif
+
+#MERGING TO GTiff FILES OF MODIS IN TO ONE 
+gdal_merge.py LSWI_2019_04_07.tif LSWI_2019_04_07_Down.tif LSWI_2019_04_07_Up.tif 
+
+#CONVERT FINAL FILE FROM GTiff TO netCDF
+gdal_translate -of netCDF -co "FORMAT=NC4" LSWI_2019_04_23.tif LSWI_2019_04_23.nc
+
+#CUT THE FILE TO NEEDED DOMAIN
+cdo sellonlatbox,23.0,35.0,57.0,64.0 EVI_2019_03_14.nc EVI_2019_03_14_cut.nc
+
+#REPROJECT THE FILE TO NEW DOMAIN
+cdo remapbil,gfs_grid.txt ERA_PAR_03_2019.nc ERA_PAR_03_2019_cut_v1.nc
+
+#CONVERT PAR FROM J TO umole
+ncap2 -s 'Band1=Band1*4.57' ERA_PAR_03_2019_cut_Int.nc ERA_PAR_03_2019_cut_Int_mole.nc
